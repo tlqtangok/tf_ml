@@ -1,19 +1,22 @@
 
 # coding: utf-8
 
-# In[90]:
+# In[1]:
 
 import math
 from tensorflow.examples.tutorials.mnist import input_data
 import tensorflow as tf
 from tensorflow.python.framework import ops
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+#import pandas as pd
+#import matplotlib.pyplot as plt
 
 
 
-        
+def load_npz(fn_npz):
+    np_load = np.load(fn_npz)
+    return np_load[np_load.files[0]]
+
 def gen_sets_and_label(x_items, x_dim, y_dim):
     x_data = (np.random.random([x_items,x_dim])-0.5) *2
     x_data=x_data.astype(np.float32)
@@ -189,6 +192,7 @@ class ML(object):
         cnt_net_ok = 0
         batch_size = self.batch_size
         a_rate_e = 0.0
+        initial_accu_percent = -1
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
             for i in range(self.iter_times):
@@ -205,24 +209,29 @@ class ML(object):
                 if i%100 == 0:
                     a_rate_e = self.accu_percent.eval( feed_dict = {self.x:bd_0, self.y:bd_1, self.keep_prob: 1.0} )  # y_ and y
                     print ("- train %d, accuracy: %g" %(i,a_rate_e))
-                    if a_rate_e > 0.971:
+                    if a_rate_e > 0.891:
                         cnt_net_ok += 1
                     else:
                         cnt_net_ok = 0
                     if cnt_net_ok == 3:
-                        tf.train.Saver().save(sess, "./mm/mm.ckpt")
-                        print ("- save mm.ckpt")
-                        break                      
+                        print("- meet cnt_net_ok >= 3")
+                        cnt_net_ok == 0
+                        x_test_accu_precent = self.accu_percent.eval( feed_dict={self.x: x_test, self.y:y_test, self.keep_prob:1.0} )
+                        print ("- the test accuracy %g " % x_test_accu_precent )
+                        
+                        if x_test_accu_precent > initial_accu_percent: 
+                            tf.train.Saver().save(sess, "./mm/mm.ckpt")
+                            print ("- save mm.ckpt\n")
+                            initial_accu_percent = x_test_accu_precent
                    
                 self.id_train.run( feed_dict = {self.x:bd_0, self.y:bd_1, self.keep_prob: self.keep_prob_rate } ) 
 
                     
 #             feed_content = {self.x:mnist.test.images,self.y:mnist.test.labels,self.keep_prob:1.0}
             x_test_accu_precent = self.accu_percent.eval( feed_dict={self.x: x_test, self.y:y_test, self.keep_prob:1.0} )
-            print ("- the test accuracy %g " % x_test_accu_precent )
-            if cnt_net_ok != 3 and x_test_accu_precent > 0.95:
+            if x_test_accu_precent > initial_accu_percent:
                 tf.train.Saver().save(sess, "./mm/mm.ckpt")
-                print ("- save mm.ckpt")
+                print ("- save mm.ckpt\n")
 
                 
             
@@ -254,21 +263,28 @@ class ML(object):
                 if i%100 == 0:
                     a_rate_e = self.accu_percent.eval( feed_dict = {self.x:bd_0, self.y:bd_1, self.keep_prob: 1.0} )  # y_ and y
                     print ("- train %d, accuracy: %g" %(i,a_rate_e))
-                    if a_rate_e > 0.985:
+                    if a_rate_e > 0.94:
                         cnt_net_ok += 1
                     else:
                         cnt_net_ok = 0
-                    if cnt_net_ok == 6:
+                    if cnt_net_ok == 3:
+                        cnt_net_ok = 0
+                        x_test_accu_precent = self.accu_percent.eval( feed_dict={self.x: x_test, self.y:y_test, self.keep_prob:1.0} )
+                        print ("- the test accuracy %g " % x_test_accu_precent)
+                        if x_test_accu_precent > initial_accu_percent:
+                            initial_accu_percent = x_test_accu_precent
+                            tf.train.Saver().save(sess, "./mm/mm.ckpt")
+                            print ("- save mm.ckpt\n")
 #                         tf.train.Saver().save(sess, "./mm/mm.ckpt")
-                        break                      
+                        #break                      
                    
                 self.id_train.run( feed_dict = {self.x:bd_0, self.y:bd_1, self.keep_prob: self.keep_prob_rate } ) 
-#             feed_content = {self.x:mnist.test.images,self.y:mnist.test.labels,self.keep_prob:1.0}
+
             x_test_accu_precent = self.accu_percent.eval( feed_dict={self.x: x_test, self.y:y_test, self.keep_prob:1.0} )
             print ("- the test accuracy %g " % x_test_accu_precent)
             if x_test_accu_precent > initial_accu_percent:
                 tf.train.Saver().save(sess, "./mm/mm.ckpt")
-                print ("- save mm.ckpt")
+                print ("- save mm.ckpt\n")
             
         return self        
     @property
@@ -310,10 +326,10 @@ if __name__ == "__main__":
     if 1:
         
         OBJ_ML_CONST={
-        "lr": 2e-4,
+        "lr": 1e-3,
         "iter_times": 10000,
-        "batch_size": 500,
-        "keep_prob_rate": 0.9 ,
+        "batch_size": 19 * 4,
+        "keep_prob_rate": 0.819,
         "loss": "LOSS INIT" , 
         "accu_percent": "ACCU_PERCENT INIT" , 
         "id_train": "ID_TRAIN INIT" , 
@@ -323,9 +339,9 @@ if __name__ == "__main__":
 
         ops.reset_default_graph()
 
-        x_items = 35044
-        x_dim = 4
-        y_dim = 3 
+        x_items = 102270 
+        x_dim = 30000 
+        y_dim = 19 
         
         #define data test
         x_data = y_data = x_test = y_test = np.mat("0.0;1.0")
@@ -342,22 +358,36 @@ if __name__ == "__main__":
             np.savetxt("x_test_50000x4.nptxt",x_test, fmt="%.1f")
             np.savetxt("y_test_50000x3.nptxt",y_test, fmt="%.1f")
             
-       
-            
             
         if 1:
             x_data = np.loadtxt("x_data_50000x4.nptxt")
             y_data = np.loadtxt("y_data_50000x3.nptxt")            
             x_test = np.loadtxt("x_test_50000x4.nptxt")
             y_test = np.loadtxt("y_test_50000x3.nptxt")
+
+#             x_data = load_npz("./data/x_data_102270x30000.npz")
+#             print("- finished load x_data from ./data/x_data_102270x30000.npz ")
+
+#             y_data = load_npz("./data/y_data_102270x19.npz")            
+#             print("- finished load y_data from ./data/y_data_102270x19.npz ")
+
+#             x_test = x_data
+#             y_test = y_data
+
+            #x_test = load_npz("./data/x_test_102277x30000.npz")
+
+            #y_test = np.loadtxt("y_test_50000x3.nptxt")
             x_items = x_data.shape[0]
-            assert(x_dim == x_data.shape[1])
-            assert(y_dim == y_data.shape[1])
+#             assert(x_dim == x_data.shape[1])
+            x_dim = x_data.shape[1]
+            y_dim = y_data.shape[1]
+#             assert(y_dim == y_data.shape[1])
             
         print (x_data.shape)
+        print (y_data.shape)
 
         
-        ml = ML( x_dim ,y_dim ,OBJ_ML_CONST )
+        ml = ML(x_dim ,y_dim ,OBJ_ML_CONST )
 
         ml.c = ml.conv2d_by_k
         ml.p = ml.pool_2x2
@@ -376,17 +406,18 @@ if __name__ == "__main__":
         #print ( ml.img )
         ml.flat
 
-        h_in_k = [ml.flat_ele, y_dim * y_dim]
+        h_in_k = [ml.flat_ele, y_dim * 10]
         ml.cal_w_b_by_k(h_in_k, act_fun="relu")     
-        
-        h_in_k = [y_dim * y_dim, y_dim * y_dim ]
-        ml.cal_w_b_by_k(h_in_k, act_fun="relu")
-        
-        h_in_k = [y_dim * y_dim , y_dim]
-        ml.cal_w_b_by_k(h_in_k, act_fun="relu")
-#         ml.tf_dropout( ml.keep_prob )
+        #ml.tf_dropout( ml.keep_prob )
 
-        h_in_k = [y_dim, y_dim]
+        h_in_k = [y_dim * 10, y_dim * 4]
+        ml.cal_w_b_by_k(h_in_k, act_fun="relu")
+        #ml.tf_dropout( ml.keep_prob )
+        
+        #h_in_k = [y_dim * 2 , y_dim]
+        #ml.cal_w_b_by_k(h_in_k, act_fun="relu")
+
+        h_in_k = [y_dim * 4, y_dim]
         ml.cal_w_b_by_k(h_in_k, act_fun="softmax")        
 #         ml.tf_dropout( ml.keep_prob )
         
@@ -398,7 +429,7 @@ if __name__ == "__main__":
         if 0:
             print ("- start trainning process")
             ml.say()
-            ml.start_train_loop(x_data, y_data, x_test,y_test)
+            ml.start_train_loop(x_data, y_data, x_test, y_test)
             
         if 1:
             with tf.Session() as sess:
@@ -420,7 +451,7 @@ if __name__ == "__main__":
                 print ("- prediction on test: %f\n\n" % (cnt_correct / len(y_test_)))
                 
                 
-                ml.restart_train_loop(x_data, y_data, x_test,y_test, old_accu_percent)
+                ml.restart_train_loop(x_data, y_data, x_test, y_test, old_accu_percent)
                 
                 y_test_ = (sess.run(ml.y_, feed_dict={ml.x:x_test, ml.keep_prob: 1.0}))
                 cnt_correct = 0   
@@ -432,15 +463,16 @@ if __name__ == "__main__":
 #                         print (dis)
                         id_list.append(dis)
 #                 id_list = [ 1,2,3,4]
-                pd_t = pd.DataFrame(id_list)
+                #pd_t = pd.DataFrame(id_list)
                 print ("- error num:", len(id_list))
 #                 print(pd_t)
-                pd_t.plot.bar()
+                #pd_t.plot.bar()
                
-                plt.show()
+                #plt.show()
                      
                 
 
 
     print ("- END")        
+
 
